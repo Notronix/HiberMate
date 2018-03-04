@@ -44,6 +44,7 @@ public class PersistenceConfiguration extends Configuration
     }
 
     @Override
+    @Deprecated
     public Configuration configure(Document document) throws HibernateException {
         configured = true;
 
