@@ -38,6 +38,8 @@ import java.util.Set;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import org.hibernate.query.Query;
+
 @RunWith(JUnit4.class)
 public class DefaultPersistenceManagerImplTest
 {

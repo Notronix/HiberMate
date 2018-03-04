@@ -5,7 +5,6 @@ import java.time.Instant;
 public interface Syncable
 {
     Instant getLastSynchronizedDate();
-
     void setLastSynchronizedDate(Instant lastSynchronizedDate);
 
     boolean isOutdated(int timeoutInHours);

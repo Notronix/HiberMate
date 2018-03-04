@@ -11,8 +11,7 @@ import static org.junit.Assert.assertNull;
 public class DBQueryTest
 {
     @Test
-    public void testQueryString()
-    {
+    public void testQueryString() {
         DBQuery query = new DBQuery("test");
         assertEquals("Constructor did not save query string.", "test", query.getQuery());
 
@@ -21,8 +20,7 @@ public class DBQueryTest
     }
 
     @Test
-    public void testSetString()
-    {
+    public void testSetString() {
         DBQuery query = new DBQuery("test");
         assertNull("param1 should be null.", query.getString("param1"));
 
@@ -34,8 +32,7 @@ public class DBQueryTest
     }
 
     @Test
-    public void testSetDouble()
-    {
+    public void testSetDouble() {
         DBQuery query = new DBQuery("test");
         assertNull("param1 should be null.", query.getDouble("param1"));
 
@@ -47,8 +44,7 @@ public class DBQueryTest
     }
 
     @Test
-    public void testSetLong()
-    {
+    public void testSetLong() {
         DBQuery query = new DBQuery("test");
         assertNull("param1 should be null.", query.getLong("param1"));
 
@@ -60,8 +56,7 @@ public class DBQueryTest
     }
 
     @Test
-    public void testSetInteger()
-    {
+    public void testSetInteger() {
         DBQuery query = new DBQuery("test");
         assertNull("param1 should be null.", query.getInteger("param1"));
 

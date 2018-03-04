@@ -6,7 +6,6 @@ import org.hibernate.Transaction;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
 
-import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
