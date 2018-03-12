@@ -4,14 +4,15 @@ apply plugin: 'signing'
 
 sourceCompatibility = 1.8
 group 'com.notronix'
-version '1.0.002'
+version '1.0.003'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    compile 'com.notronix:AlbacoreDeed:1.1.0'
+    compile 'com.notronix:AlbacoreDeed:2.0.0'
+    compile 'org.apache.commons:commons-lang3:3.4'
     compile 'org.hibernate:hibernate-core:5.2.13.Final'
     compile 'org.hibernate:hibernate-entitymanager:5.2.13.Final'
     compile 'org.hibernate:hibernate-c3p0:5.2.13.Final'

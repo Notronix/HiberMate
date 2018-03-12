@@ -13,7 +13,7 @@ import java.util.Map;
 import static com.notronix.albacore.ContainerUtils.*;
 import static com.notronix.albacore.NumberUtils.doubleValueOf;
 import static com.notronix.albacore.NumberUtils.longValueOf;
-import static com.notronix.albacore.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @SuppressWarnings("TryFinallyCanBeTryWithResources")
 public class DefaultPersistenceManagerImpl implements PersistenceManager
