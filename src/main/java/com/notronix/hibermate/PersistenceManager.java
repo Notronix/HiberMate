@@ -29,6 +29,9 @@ public interface PersistenceManager
 
     int executeManipulationQuery(DBQuery query) throws PersistenceException;
     Long getLong(DBQuery query) throws PersistenceException;
+
     long getCount(DBQuery query) throws PersistenceException;
+    long getCount(Class<? extends PersistenceCapable> objectClass, String predicate) throws PersistenceException;
+
     double getSum(DBQuery query) throws PersistenceException;
 }

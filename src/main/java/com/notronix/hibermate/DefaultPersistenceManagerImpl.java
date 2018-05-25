@@ -219,6 +219,21 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
         }
     }
 
+    public long getCount(Class<? extends PersistenceCapable> objectClass, String predicate) throws PersistenceException {
+        String query = "select count(*) from " + objectClass.getSimpleName();
+
+        if (isNotBlank(predicate)) {
+            query += " " + predicate;
+        }
+
+        try {
+            return (Long) openSession().createQuery(query).iterate().next();
+        }
+        catch (Exception ex) {
+            throw new PersistenceException("Query did not return an Integer value.", ex);
+        }
+    }
+
     @Override
     public long getCount(DBQuery query) throws PersistenceException {
         List<Object> results = getResults(query);
