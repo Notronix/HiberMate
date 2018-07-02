@@ -20,15 +20,15 @@ public class PersistenceUtilTest
     public void preTest() {
         object = new PersistenceCapable()
         {
-            private Long systemId;
+            private Object systemId;
 
             @Override
-            public Long getSystemId() {
+            public Object getSystemId() {
                 return systemId;
             }
 
             @Override
-            public void setSystemId(Long systemId) {
+            public void setSystemId(Object systemId) {
                 this.systemId = systemId;
             }
         };
@@ -41,28 +41,25 @@ public class PersistenceUtilTest
 
     @Test
     public void testItIsValid() {
-        assertFalse("Null should not be valid.", itIsAValid((PersistenceCapable) null));
+        assertFalse("Null should not be valid.", itIsAValid(null));
         assertFalse("New items should not be valid.", itIsAValid(object));
 
-        object.setSystemId(0l);
+        object.setSystemId(0L);
         assertFalse("Should not be valid if systemId=0", itIsAValid(object));
 
-        object.setSystemId(1l);
+        object.setSystemId(1L);
         assertTrue("Should be valid", itIsAValid(object));
     }
 
     @Test
     public void testItIsNotValid() {
-        assertTrue("Null should not be valid.", itIsNotAValid((PersistenceCapable) null));
+        assertTrue("Null should not be valid.", itIsNotAValid(null));
         assertTrue("New items should not be valid.", itIsNotAValid(object));
 
-        object.setSystemId(0l);
+        object.setSystemId(0L);
         assertTrue("Should not be valid if systemId=0", itIsNotAValid(object));
 
-        object.setSystemId(1l);
+        object.setSystemId(1L);
         assertFalse("Should be valid", itIsNotAValid(object));
-
-        assertTrue("Should not be valid.", itIsNotAValid(0l));
-        assertFalse("Should be valid.", itIsNotAValid(234l));
     }
 }

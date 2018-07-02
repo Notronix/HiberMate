@@ -38,8 +38,6 @@ import java.util.Set;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import org.hibernate.query.Query;
-
 @RunWith(JUnit4.class)
 public class DefaultPersistenceManagerImplTest
 {
@@ -53,12 +51,12 @@ public class DefaultPersistenceManagerImplTest
         object = new PersistenceCapable()
         {
             @Override
-            public Long getSystemId() {
+            public Object getSystemId() {
                 return null;
             }
 
             @Override
-            public void setSystemId(Long systemId) {
+            public void setSystemId(Object systemId) {
             }
         };
 

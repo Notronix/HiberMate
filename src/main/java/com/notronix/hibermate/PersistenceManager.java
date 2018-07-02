@@ -11,6 +11,7 @@ public interface PersistenceManager
     <T extends PersistenceCapable> Long makePersistent(T object) throws PersistenceException;
     <T extends PersistenceCapable> void deletePersistent(T object) throws PersistenceException;
     <T extends PersistenceCapable> T update(T object) throws PersistenceException;
+    <T extends PersistenceCapable> void update(String recordId, String objectType, T object) throws PersistenceException;
 
     <T extends PersistenceCapable> T get(Class<T> objectClass, Long systemId) throws PersistenceException;
 

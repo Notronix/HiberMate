@@ -6,6 +6,8 @@ import org.hibernate.Transaction;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
 
+import java.io.Serializable;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import java.util.Map;
 import static com.notronix.albacore.ContainerUtils.*;
 import static com.notronix.albacore.NumberUtils.doubleValueOf;
 import static com.notronix.albacore.NumberUtils.longValueOf;
+import static com.notronix.hibermate.PersistenceUtil.itIsAValid;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @SuppressWarnings("TryFinallyCanBeTryWithResources")
@@ -80,7 +83,7 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
         try {
             transaction = session.beginTransaction();
             //noinspection unchecked
-            T alias = session.get((Class<T>) object.getClass(), object.getSystemId());
+            T alias = session.get((Class<T>) object.getClass(), (Serializable) object.getSystemId());
             session.delete(alias);
             transaction.commit();
         }
@@ -93,6 +96,26 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
         }
         finally {
             session.close();
+        }
+    }
+
+    @Override
+    public void update(String recordId, String objectType, PersistenceCapable object)
+            throws PersistenceException {
+        try {
+            if (object instanceof Syncable) {
+                ((Syncable) object).setLastSynchronizedDate(Instant.now());
+            }
+
+            if (itIsAValid(object)) {
+                update(object);
+            }
+            else {
+                makePersistent(object);
+            }
+        }
+        catch (Exception ex) {
+            throw new PersistenceException(recordId + ": Failed storing " + objectType + ".", ex);
         }
     }
 

@@ -1,7 +1,7 @@
 package com.notronix.hibermate;
 
-public interface PersistenceCapable
+public interface PersistenceCapable<T>
 {
-    Long getSystemId();
-    void setSystemId(Long systemId);
+    T getSystemId();
+    void setSystemId(T systemId);
 }
