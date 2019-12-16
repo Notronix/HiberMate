@@ -3,12 +3,14 @@ package com.notronix.hibermate;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
+import org.hibernate.type.BasicTypeRegistry;
+import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +26,7 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     private static PersistenceManager instance;
 
     private HibernateUtil hibernateUtil;
+    private BasicTypeRegistry typeRegistry = new BasicTypeRegistry();
 
     private DefaultPersistenceManagerImpl() {
     }
@@ -391,25 +394,14 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
             if (thereAreOneOrMore(params)) {
                 for (Map.Entry<String, Object> entry : params.entrySet()) {
                     Object value = entry.getValue();
+                    String registryKey = value.getClass().getName();
+                    Type type = typeRegistry.getRegisteredType(registryKey);
 
-                    if (value instanceof Date) {
-                        hibernateQuery.setDate(entry.getKey(), (Date) value);
+                    if (type != null) {
+                        value = new TypedParameterValue(type, value);
                     }
-                    else if (value instanceof String) {
-                        hibernateQuery.setString(entry.getKey(), (String) value);
-                    }
-                    else if (value instanceof Long) {
-                        hibernateQuery.setLong(entry.getKey(), (Long) value);
-                    }
-                    else if (value instanceof Double) {
-                        hibernateQuery.setDouble(entry.getKey(), (Double) value);
-                    }
-                    else if (value instanceof Integer) {
-                        hibernateQuery.setInteger(entry.getKey(), (Integer) value);
-                    }
-                    else {
-                        hibernateQuery.setParameter(entry.getKey(), value);
-                    }
+
+                    hibernateQuery.setParameter(entry.getKey(), value);
                 }
             }
 
