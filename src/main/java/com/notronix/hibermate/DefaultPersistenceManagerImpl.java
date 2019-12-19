@@ -252,11 +252,16 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
             query += " " + predicate;
         }
 
+        Session session = openSession();
+
         try {
-            return (Long) openSession().createQuery(query).iterate().next();
+            return (Long) session.createQuery(query).iterate().next();
         }
         catch (Exception ex) {
             throw new PersistenceException("Query did not return an Integer value.", ex);
+        }
+        finally {
+            session.close();
         }
     }
 
