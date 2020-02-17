@@ -1,4 +1,4 @@
-package com.notronix.hibermate;
+package com.notronix.hibermate.api;
 
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;

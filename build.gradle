@@ -4,24 +4,33 @@ apply plugin: 'signing'
 
 sourceCompatibility = 1.8
 group 'com.notronix'
-version '1.0.008'
+version '2.0.001'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    compile 'com.notronix:AlbacoreDeed:2.0.0'
-    compile 'org.apache.commons:commons-lang3:3.7'
-    compile 'org.hibernate:hibernate-core:5.2.13.Final'
-    compile 'org.hibernate:hibernate-entitymanager:5.2.13.Final'
-    compile 'org.hibernate:hibernate-c3p0:5.2.13.Final'
+    compile 'com.notronix:AlbacoreDeed:2.0.6'
+    compile 'org.hibernate:hibernate-core:5.2.18.Final'
+    compile 'org.hibernate:hibernate-entitymanager:5.2.18.Final'
+    compile 'org.hibernate:hibernate-c3p0:5.2.18.Final'
 
     testCompile 'junit:junit:4.12'
+    testCompile 'mysql:mysql-connector-java:5.1.44'
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '4.4.1'
+}
+
+test {
+    systemProperties System.getProperties().subMap(['hibernate.dialect.storage_engine',
+                                                    'hibernate.connection.url',
+                                                    'hibernate.connection.username',
+                                                    'hibernate.connection.password',
+                                                    'hibernate.connection.driver_class',
+                                                    'hibernate.dialect'])
 }
 
 jar {

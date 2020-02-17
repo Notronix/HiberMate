@@ -1,7 +1,11 @@
-package com.notronix.hibermate;
+package com.notronix.hibermate.api;
 
 public class PersistenceException extends Exception
 {
+    public PersistenceException(String message) {
+        super(message);
+    }
+
     public PersistenceException(String message, Throwable cause) {
         super(message, cause);
     }

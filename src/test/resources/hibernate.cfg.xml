@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+
+    <session-factory>
+
+        <!-- C3P0 Specific Settings -->
+        <property name="hibernate.connection.provider_class">org.hibernate.c3p0.internal.C3P0ConnectionProvider</property>
+        <property name="hibernate.connection.release_mode">after_transaction</property>
+
+        <!-- Start with 10 connections -->
+        <property name="hibernate.c3p0.initialPoolSize">
+            10
+        </property>
+
+        <!-- Keep a minimum of 10 connections -->
+        <property name="hibernate.c3p0.min_size"> <!-- AKA minPoolSize -->
+            10
+        </property>
+
+        <!-- Allow no more than 100 connections -->
+        <property name="hibernate.c3p0.max_size"> <!-- AKA maxPoolSize -->
+            100
+        </property>
+
+        <!-- Get connections in packages of 5 -->
+        <property name="hibernate.c3p0.acquire_increment"> <!-- AKA acquireIncrement -->
+            5
+        </property>
+
+        <!-- Remove a connection if it is idle for 1 hour or more -->
+        <property name="hibernate.c3p0.timeout"> <!-- AKA maxIdleTime -->
+            3600
+        </property>
+
+        <!-- Remove a connection regardless if it is older than 5 hours -->
+        <property name="hibernate.c3p0.maxConnectionAge">
+            18000
+        </property>
+
+        <!-- Remove connections if they are idle for 3 minutes or more during non-peak times. -->
+        <property name="hibernate.c3p0.maxIdleTimeExcessConnections">
+            180
+        </property>
+
+        <property name="hibernate.c3p0.testConnectionOnCheckout">
+            true
+        </property>
+
+        <property name="hibernate.c3p0.testConnectionOnCheckin">
+            false
+        </property>
+
+        <property name="hibernate.c3p0.preferredTestQuery">
+            SELECT 1
+        </property>
+
+        <property name="hibernate.c3p0.idleConnectionTestPeriod">
+            300
+        </property>
+
+        <property name="hibernate.c3p0.numHelperThreads">
+            10
+        </property>
+
+        <property name="hibernate.c3p0.unreturnedConnectionTimeout">
+            300
+        </property>
+
+        <property name="hibernate.c3p0.debugUnreturnedConnectionStackTraces">
+            true
+        </property>
+
+        <!-- Vendor Neutral Settings -->
+
+        <!-- Enable automatic session context management -->
+        <property name="hibernate.current_session_context_class">thread</property>
+
+        <property name="hibernate.jdbc.batch_size">50</property>
+        <property name="hibernate.order_inserts">true</property>
+        <property name="hibernate.order_updates">true</property>
+
+        <!-- Disable the second-level cache -->
+        <!--suppress HibernateConfigDomInspection -->
+        <property name="hibernate.cache.provider_class">org.hibernate.cache.internal.NoCacheProvider</property>
+
+        <!-- Echo all executed SQL to out stream -->
+        <property name="hibernate.show_sql">false</property>
+
+        <!-- Drop and re-create the database schema on startup -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <mapping package="com.notronix.hibermate.impl"/>
+        <mapping class="com.notronix.hibermate.impl.PersistedLong"/>
+
+    </session-factory>
+
+</hibernate-configuration>

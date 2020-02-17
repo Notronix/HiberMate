@@ -1,8 +1,14 @@
-package com.notronix.hibermate;
+package com.notronix.hibermate.impl;
 
-import org.hibernate.HibernateException;
+import com.notronix.hibermate.api.*;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.model.relational.Database;
+import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
@@ -17,51 +23,53 @@ import java.util.Map;
 import static com.notronix.albacore.ContainerUtils.*;
 import static com.notronix.albacore.NumberUtils.doubleValueOf;
 import static com.notronix.albacore.NumberUtils.longValueOf;
-import static com.notronix.hibermate.PersistenceUtil.itIsAValid;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-@SuppressWarnings("TryFinallyCanBeTryWithResources")
 public class DefaultPersistenceManagerImpl implements PersistenceManager
 {
-    private static PersistenceManager instance;
+    private Database database;
+    private final BasicTypeRegistry typeRegistry;
+    private final BootstrapServiceRegistryBuilder bootstrapRegistryBuilder;
+    private SessionFactory sessionFactory;
+    private final Object lock = new Object();
 
-    private HibernateUtil hibernateUtil;
-    private BasicTypeRegistry typeRegistry = new BasicTypeRegistry();
+    public static PersistenceManager createDefaultManager() {
+        DefaultPersistenceManagerImpl manager =
+                new DefaultPersistenceManagerImpl(new BasicTypeRegistry(), new BootstrapServiceRegistryBuilder());
+        manager.getBootstrapRegistryBuilder().applyIntegrator(new DatabaseIntegrator(manager));
 
-    private DefaultPersistenceManagerImpl() {
+        return manager;
     }
 
-    public static PersistenceManager getInstance() {
-        if (instance == null) {
-            instance = new DefaultPersistenceManagerImpl();
-        }
-
-        return instance;
+    public DefaultPersistenceManagerImpl(BasicTypeRegistry typeRegistry, BootstrapServiceRegistryBuilder bootstrapRegistryBuilder) {
+        this.typeRegistry = requireNonNull(typeRegistry);
+        this.bootstrapRegistryBuilder = requireNonNull(bootstrapRegistryBuilder);
     }
 
-    @Override
-    public HibernateUtil getHibernateUtil() {
-        if (hibernateUtil == null) {
-            hibernateUtil = new DefaultHibernateUtilImpl();
-        }
-
-        return hibernateUtil;
-    }
-
-    @Override
-    public void setHibernateUtil(HibernateUtil hibernateUtil) {
-        this.hibernateUtil = hibernateUtil;
+    protected BootstrapServiceRegistryBuilder getBootstrapRegistryBuilder() {
+        return bootstrapRegistryBuilder;
     }
 
     @Override
-    public <T extends PersistenceCapable> Long makePersistent(T object) throws PersistenceException {
+    public Database getDatabase() {
+        return database;
+    }
+
+    protected void setDatabase(Database database) {
+        this.database = database;
+    }
+
+    @Override
+    public <K extends Serializable> K makePersistent(PersistenceCapable<K> object) throws PersistenceException {
         Session session = openSession();
         Transaction transaction = null;
-        Long systemId;
+        K systemId;
 
         try {
             transaction = session.beginTransaction();
-            systemId = (Long) session.save(object);
+            //noinspection unchecked
+            systemId = (K) session.save(object);
             transaction.commit();
         }
         catch (Exception e) {
@@ -79,14 +87,14 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     }
 
     @Override
-    public <T extends PersistenceCapable> void deletePersistent(T object) throws PersistenceException {
-        Session session = openSession();
+    public void deletePersistent(PersistenceCapable<?> object) throws PersistenceException {
         Transaction transaction = null;
 
-        try {
+        try (Session session = openSession()) {
+            @SuppressWarnings("unchecked")
+            Class<PersistenceCapable<?>> clazz = (Class<PersistenceCapable<?>>) object.getClass();
             transaction = session.beginTransaction();
-            //noinspection unchecked
-            T alias = session.get((Class<T>) object.getClass(), (Serializable) object.getSystemId());
+            PersistenceCapable<?> alias = session.get(clazz, object.getSystemId());
             session.delete(alias);
             transaction.commit();
         }
@@ -97,20 +105,17 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
 
             throw new PersistenceException("An error occurred trying to delete object.", e);
         }
-        finally {
-            session.close();
-        }
     }
 
     @Override
-    public void update(String recordId, String objectType, PersistenceCapable object)
+    public void update(String recordId, String objectType, PersistenceCapable<?> object)
             throws PersistenceException {
         try {
             if (object instanceof Syncable) {
                 ((Syncable) object).setLastSynchronizedDate(Instant.now());
             }
 
-            if (itIsAValid(object)) {
+            if (PersistenceManager.itIsAValid(object)) {
                 update(object);
             }
             else {
@@ -123,7 +128,7 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     }
 
     @Override
-    public <T extends PersistenceCapable> T update(T object) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> T update(T object) throws PersistenceException {
         Session session = openSession();
         Transaction transaction = null;
         T alias;
@@ -150,7 +155,8 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     }
 
     @Override
-    public <T extends PersistenceCapable> T get(Class<T> objectClass, Long systemId) throws PersistenceException {
+    public <K extends Serializable, T extends PersistenceCapable<K>> T get(Class<T> objectClass, K systemId)
+            throws PersistenceException {
         if (systemId == null) {
             throw new PersistenceException("systemId is null", null);
         }
@@ -179,22 +185,27 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     }
 
     @Override
-    public <T extends PersistenceCapable> T getFirst(Class<T> objectClass) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> T getFirst(Class<T> objectClass) throws PersistenceException {
         return getFirst(objectClass, null, null);
     }
 
     @Override
-    public <T extends PersistenceCapable> T getFirst(Class<T> objectClass, String predicate) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> T getFirst(Class<T> objectClass, String predicate)
+            throws PersistenceException {
         return getFirst(objectClass, predicate, null);
     }
 
     @Override
-    public <T extends PersistenceCapable> T getFirst(Class<T> objectClass, String predicate, Map<String, Object> params) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> T getFirst(Class<T> objectClass, String
+            predicate, Map<String, Object> params)
+            throws PersistenceException {
         return theFirst(getList(objectClass, predicate, params));
     }
 
     @Override
-    public <T extends PersistenceCapable> List<T> getList(Class<T> objectClass, String join, String predicate, Map<String, Object> params) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> List<T> getList(Class<T> objectClass, String join, String
+            predicate, Map<String, Object> params)
+            throws PersistenceException {
         String query = "from " + objectClass.getSimpleName();
 
         if (isNotBlank(join)) {
@@ -209,17 +220,21 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     }
 
     @Override
-    public <T extends PersistenceCapable> List<T> getList(Class<T> objectClass, String join, String predicate) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> List<T> getList(Class<T> objectClass, String join, String predicate)
+            throws PersistenceException {
         return getList(objectClass, join, predicate, null);
     }
 
     @Override
-    public <T extends PersistenceCapable> List<T> getList(Class<T> objectClass, String predicate, Map<String, Object> params) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> List<T> getList(Class<T> objectClass, String
+            predicate, Map<String, Object> params)
+            throws PersistenceException {
         return getList(objectClass, null, predicate, params);
     }
 
     @Override
-    public <T extends PersistenceCapable> List<T> getList(Class<T> objectClass, String predicate) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> List<T> getList(Class<T> objectClass, String predicate)
+            throws PersistenceException {
         return getList(objectClass, null, predicate, null);
     }
 
@@ -245,23 +260,19 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
         }
     }
 
-    public long getCount(Class<? extends PersistenceCapable> objectClass, String predicate) throws PersistenceException {
+    public long getCount(Class<? extends PersistenceCapable<?>> objectClass, String predicate)
+            throws PersistenceException {
         String query = "select count(*) from " + objectClass.getSimpleName();
 
         if (isNotBlank(predicate)) {
             query += " " + predicate;
         }
 
-        Session session = openSession();
-
-        try {
+        try (Session session = openSession()) {
             return (Long) session.createQuery(query).iterate().next();
         }
         catch (Exception ex) {
             throw new PersistenceException("Query did not return an Integer value.", ex);
-        }
-        finally {
-            session.close();
         }
     }
 
@@ -310,7 +321,8 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
     }
 
     @Override
-    public <T extends PersistenceCapable> List<T> getList(DBQuery dbQuery, Class<T> resultType) throws PersistenceException {
+    public <T extends PersistenceCapable<?>> List<T> getList(DBQuery dbQuery, Class<T> resultType)
+            throws PersistenceException {
         Session session = openSession();
         Transaction transaction = null;
         List<T> results;
@@ -369,7 +381,6 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
 
         try {
             transaction = session.beginTransaction();
-            //noinspection unchecked
             results = dbQuery.getQuery(session, null).list();
             transaction.commit();
         }
@@ -384,10 +395,12 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
             session.close();
         }
 
+        //noinspection unchecked
         return (List<Object[]>) results;
     }
 
-    private <T> List<T> getList(String query, Map<String, Object> params, Class<T> resultType) throws PersistenceException {
+    private <T> List<T> getList(String query, Map<String, Object> params, Class<T> resultType)
+            throws PersistenceException {
         Session session = openSession();
         Transaction transaction = null;
         List<T> results;
@@ -434,9 +447,8 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
 
         try {
             transaction = session.beginTransaction();
-            NativeQuery sqlQuery = query.getQuery(session, null);
+            NativeQuery<Object> sqlQuery = query.getQuery(session, null);
             sqlQuery.setMaxResults(1);
-            //noinspection unchecked
             results = sqlQuery.list();
             transaction.commit();
         }
@@ -454,12 +466,30 @@ public class DefaultPersistenceManagerImpl implements PersistenceManager
         return results;
     }
 
-    private Session openSession() throws PersistenceException {
+    public Session openSession() throws PersistenceException {
         try {
-            return getHibernateUtil().getSessionFactory().openSession();
+            return getOrCreateSessionFactory().openSession();
         }
-        catch (HibernateException he) {
-            throw new PersistenceException("An error occurred trying to open a session.", he);
+        catch (Exception ex) {
+            throw new PersistenceException("An error occurred trying to open a session.", ex);
         }
+    }
+
+    private SessionFactory getOrCreateSessionFactory() {
+        if (sessionFactory != null) {
+            return sessionFactory;
+        }
+
+        synchronized (lock) {
+            if (sessionFactory != null) {
+                return sessionFactory;
+            }
+
+            StandardServiceRegistry registry =
+                    new StandardServiceRegistryBuilder(bootstrapRegistryBuilder.build()).configure().build();
+            sessionFactory = new MetadataSources(registry).buildMetadata().buildSessionFactory();
+        }
+
+        return sessionFactory;
     }
 }
